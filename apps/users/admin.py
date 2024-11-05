@@ -4,6 +4,7 @@ from apps.users.models import User, StudentProfile, TeacherProfile
 # Register your models here.
 class UserAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'username',
         'email',
         'name',

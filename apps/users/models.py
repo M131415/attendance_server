@@ -38,6 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField('Correo Electrónico',max_length = 255, unique = True, null=True, blank=True)
     name = models.CharField('Nombres', max_length = 255, blank = True, null = True)
     last_name = models.CharField('Apellidos', max_length = 255, blank = True, null = True)
+    image = models.ImageField('Imagen de perfil', upload_to='perfil/', max_length=255, null=True, blank=True)
     date_joined = models.DateTimeField("Fecha de Incorporación", default=timezone.now)
     is_active = models.BooleanField(default = True)
     is_staff = models.BooleanField(default = False)
@@ -53,7 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = 'auth_user'
 
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['name','last_name',]
+    REQUIRED_FIELDS = ['email', 'name','last_name',]
 
     def __str__(self):
         return f'{self.name} {self.last_name} {self.rol}'

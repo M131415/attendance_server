@@ -22,10 +22,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-fv30fr9zh10ny4wd9jakcp_pdgnez9az+t*w(mha^h&lbddd_v'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -39,6 +35,7 @@ BASE_APPS = [
 ]
 
 LOCAL_APPS = [
+    'apps.base',
     'apps.users',
     'apps.groups',
     'apps.attendances',
@@ -81,17 +78,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'server.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
 
 # Password validation

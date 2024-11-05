@@ -4,6 +4,7 @@ from apps.groups.models import *
 # Register your models here.
 class ClassGroupAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'name',
         'teacher',
         'subject',
@@ -13,6 +14,7 @@ class ClassGroupAdmin(admin.ModelAdmin):
 
 class ScheduleAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'group',
         'day_of_week',
         'start_time',
@@ -21,4 +23,7 @@ class ScheduleAdmin(admin.ModelAdmin):
 
 admin.site.register(ClassGroup, ClassGroupAdmin)
 admin.site.register(Schedule, ScheduleAdmin)
-admin.site.register([Subject, Departament, Period, SchoolRoom])
+admin.site.register(Subject)
+admin.site.register(Departament)
+admin.site.register(Period)
+admin.site.register(SchoolRoom)
