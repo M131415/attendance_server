@@ -105,7 +105,7 @@ AUTH_USER_MODEL = 'users.User'
 
 LANGUAGE_CODE = 'es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Mexico_City'
 
 USE_I18N = True
 
