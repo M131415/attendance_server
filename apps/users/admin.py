@@ -18,4 +18,5 @@ class UserAdmin(admin.ModelAdmin):
         super().save_model(request, user, form, change)
 
 admin.site.register(User, UserAdmin)
-admin.site.register([StudentProfile, TeacherProfile])
+admin.site.register(StudentProfile)
+admin.site.register(TeacherProfile)
