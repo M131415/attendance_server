@@ -29,8 +29,8 @@ class Departament(BaseModel):
 
 # Periodo
 class Period(BaseModel):
-    start_date = models.DateField("Fecha de inicio", null=False, blank=False, unique=True)
-    end_date = models.DateField("Fecha de fin", null=False, blank=False, unique=True)
+    start_date = models.DateField("Fecha de inicio", null=False, blank=False,)
+    end_date = models.DateField("Fecha de fin", null=False, blank=False,)
 
     class Meta:
         verbose_name = 'Periodo'
