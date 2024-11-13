@@ -1,1 +1,9 @@
+# Enviroment virtual
 .venv/
+
+### Django ###
+*.log
+*.pot
+*.pyc
+__pycache__
+.vscode/
