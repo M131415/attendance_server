@@ -7,9 +7,14 @@ class UserAdmin(admin.ModelAdmin):
         'id',
         'username',
         'email',
-        'name',
-        'last_name',
+        'full_name',
         'rol',
+        'is_active',
+    )
+    
+    list_filter = (
+        'rol',
+        "is_active"
     )
 
     def save_model(self, request, user, form, change):
