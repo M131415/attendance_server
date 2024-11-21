@@ -21,6 +21,11 @@ class ScheduleAdmin(admin.ModelAdmin):
         'end_time',
     )
 
+    list_filter = (
+        'group',
+        'day_of_week'
+    )
+
 admin.site.register(ClassGroup, ClassGroupAdmin)
 admin.site.register(Schedule, ScheduleAdmin)
 admin.site.register(Subject)
