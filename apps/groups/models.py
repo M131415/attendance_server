@@ -37,8 +37,12 @@ class Period(BaseModel):
         verbose_name_plural = 'Periodos'
         db_table = 'period'
 
+    @property
+    def period(self):
+        return f"{self.start_date}/{self.end_date}"
+
     def __str__(self):
-        return f'{self.start_date}/{self.end_date}'
+        return f'{self.period}'
 # Aula
 class SchoolRoom(BaseModel):
     name = models.CharField("Nombre del Aula", max_length=256, null=False, blank=False, unique=True)
@@ -54,10 +58,10 @@ class SchoolRoom(BaseModel):
 # Grupo de Clases
 class ClassGroup(BaseModel):
     name = models.CharField("Nombre del grupo", max_length=256, null=False, blank=False)
-    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Docente",)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Materia")
-    period = models.ForeignKey(Period, on_delete=models.CASCADE, verbose_name="Periodo")
-    school_room = models.ForeignKey(SchoolRoom, on_delete=models.CASCADE, verbose_name="Aula")
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Docente", null=False, blank=False)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Materia", null=False, blank=False)
+    period = models.ForeignKey(Period, on_delete=models.CASCADE, verbose_name="Periodo", null=False, blank=False)
+    school_room = models.ForeignKey(SchoolRoom, on_delete=models.CASCADE, verbose_name="Aula", null=False, blank=False)
 
     class Meta:
         verbose_name = 'Grupo de clases'
