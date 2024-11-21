@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -26,6 +27,21 @@ class StudentViewSet(viewsets.GenericViewSet):
                             .filter(is_active=True, rol='STUDENT')\
                             .values('id', 'username', 'email', 'name',)
         return self.queryset
+    
+    @action(methods=['get'], detail=False)
+    def search_student(self, request):
+        username_or_name = request.query_params.get('username_or_name', '')
+        teacher = User.objects.filter(
+            Q(username__icontains=username_or_name)|
+            Q(name__icontains=username_or_name),
+            rol = 'STUDENT'
+        )
+        if teacher:
+            teacher_serializer = self.serializer_class(teacher, many=True)
+            return Response(teacher_serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            'mensaje': 'No se ha encontrado un Docente.'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def set_password(self, request, pk=None):
