@@ -50,6 +50,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     historical = HistoricalRecords()
     objects = UserManager()
 
+    @property
+    def full_name(self):
+        return f"{self.name} {self.last_name}"
+
     class Meta:
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
@@ -59,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['email', 'name','last_name',]
 
     def __str__(self):
-        return f'{self.name} {self.last_name} {self.rol}'
+        return f'{self.full_name}'
 
 class TeacherProfile(BaseModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
