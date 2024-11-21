@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from apps.groups.models import Subject, Departament, Period, SchoolRoom
+from apps.groups.models import Subject, Departament, Period, SchoolRoom, Schedule
 from apps.groups.api.serializers.general_serializers import *
 
 class SubjectViewSet(viewsets.GenericViewSet):
@@ -112,11 +112,11 @@ class PeriodViewSet(viewsets.GenericViewSet):
         return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
 
     def list(self, request):
-        subject = self.get_queryset()
-        subject_serializer = self.get_serializer(subject, many=True)
+        period = self.get_queryset()
+        period_serializer = self.get_serializer(period, many=True)
         data = {
             "total": self.get_queryset().count(),
-            "periods": subject_serializer.data
+            "periods": period_serializer.data
         }
         return Response(data)
         
@@ -160,11 +160,11 @@ class SchoolRoomViewSet(viewsets.GenericViewSet):
         return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
 
     def list(self, request):
-        subject = self.get_queryset()
-        subject_serializer = self.get_serializer(subject, many=True)
+        school_room = self.get_queryset()
+        school_room_serializer = self.get_serializer(school_room, many=True)
         data = {
             "total": self.get_queryset().count(),
-            "schoolRooms": subject_serializer.data
+            "schoolRooms": school_room_serializer.data
         }
         return Response(data)
         
@@ -196,3 +196,51 @@ class SchoolRoomViewSet(viewsets.GenericViewSet):
             self.get_object().get().delete()       
             return Response({'message':'Aula eliminada correctamente!'}, status=status.HTTP_200_OK)       
         return Response({'message':'', 'error':'Materia no encontrada!'}, status=status.HTTP_400_BAD_REQUEST)
+
+class ScheduleViewSet(viewsets.GenericViewSet):
+    model = Schedule
+    serializer_class = ScheduleSerializer
+   
+    def get_queryset(self):
+        return self.get_serializer().Meta.model.objects.filter(state=True)
+
+    def get_object(self):
+        return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
+
+    def list(self, request):
+        schedules = self.get_queryset()
+        schedule_serializer = self.get_serializer(schedules, many=True)
+        data = {
+            "total": self.get_queryset().count(),
+            "schedules": schedule_serializer.data
+        }
+        return Response(data)
+        
+
+    def create(self, request):
+        serializer = self.serializer_class(data=request.data, context=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message':'Horario registrado correctamente!'}, status=status.HTTP_201_CREATED)
+        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        if self.get_object().exists():
+            data = self.get_object().get()
+            data = self.get_serializer(data)
+            return Response(data.data)
+        return Response({'message':'', 'error':'Horario no encontrado!'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        if self.get_object().exists():
+            serializer = self.serializer_class(instance=self.get_object().get(), data=request.data)       
+            if serializer.is_valid():       
+                serializer.save()       
+                return Response({'message':'Horario actualizado correctamente!'}, status=status.HTTP_200_OK)       
+        return Response({'message':'', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)    
+
+    def destroy(self, request, pk=None):       
+        if self.get_object().exists():
+            self.get_object().get().delete()       
+            return Response({'message':'Horario eliminado correctamente!'}, status=status.HTTP_200_OK)       
+        return Response({'message':'', 'error':'Horario no encontrado!'}, status=status.HTTP_400_BAD_REQUEST)

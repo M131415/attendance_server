@@ -8,55 +8,23 @@ class ClassGroupSerializer(serializers.ModelSerializer):
         model = ClassGroup
         exclude = ('state','created_date','modified_date','deleted_date')
 
-    def validate_name(self, value):
-        if value == '' or value == None:
-            raise serializers.ValidationError("Debe ingresar un Nombre")
-        return value
-
     def validate_teacher(self, value):
-        if value == '' or value == None:
-            raise serializers.ValidationError("Debe ingresar un Docente")
+        if value.rol != 'TEACHER':
+            raise serializers.ValidationError("Solo se admiten usuarios con el Rol de TEACHER")
         return value
     
-    def validate_period(self, value):
-        if value == '' or value == None:
-            raise serializers.ValidationError("Debe ingresar un Periodo")
-        return value
+    def to_representation(self,instance):
+        return {
+            'id': instance.id,
+            'name': instance.name,            
+            'teacher': instance.teacher.full_name if instance.teacher is not None else '',
+            'subject': instance.subject.name if instance.subject is not None else '',
+            'period': instance.period.period if instance.period is not None else '',
+            'school_room': instance.school_room.name if instance.school_room is not None else '',
+        }
 
-    def validate_subject(self, value):
-        if value == '' or value == None:
-            raise serializers.ValidationError("Debe ingresar una Materia")
-        return value
-    
-    def validate_school_room(self, value):
-        if value == '' or value == None:
-            raise serializers.ValidationError("Debe ingresar una Aula")
-        return value
+class ClassGroupRetrieveSerializer(serializers.ModelSerializer):
 
-    def validate(self, data):
-        if 'name' not in data.keys():
-            raise serializers.ValidationError({
-                "name": "Debe ingresar un nombre."
-            })
-        
-        if 'teacher' not in data.keys():
-            raise serializers.ValidationError({
-                "teacher": "Debe ingresar un Docente."            
-            })
-        
-        if 'subject' not in data.keys():
-            raise serializers.ValidationError({
-                "name": "Debe ingresar una Materia."
-            })
-        
-        if 'period' not in data.keys():
-            raise serializers.ValidationError({
-                "period": "Debe ingresar un Periodo."            
-            })
-        
-        if 'school_room' not in data.keys():
-            raise serializers.ValidationError({
-                "name": "Debe ingresar un Aula."
-            })
-        
-        return data
+    class Meta:
+        model = ClassGroup
+        exclude = ('state','created_date','modified_date','deleted_date')
