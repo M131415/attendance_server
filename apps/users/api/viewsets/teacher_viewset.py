@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from apps.users.api.serializers.teacher_serializer import (
     TeacherSerializer, TeacherListSerializer, 
     PasswordSerializer, UpdateTeacherSerializer,
 )
+from apps.groups.api.serializers.group_serializer import ClassGroupSerializer
 
 class TeacherViewSet(viewsets.GenericViewSet):
     model = User
@@ -25,6 +27,38 @@ class TeacherViewSet(viewsets.GenericViewSet):
                             .filter(is_active=True, rol='TEACHER')\
                             .values('id', 'username', 'email', 'name',)
         return self.queryset
+    
+    def get_groups_by_teacher(self, teacher=None):
+        if teacher is not None:
+            return ClassGroupSerializer.Meta.model.objects.filter(state=True, teacher=teacher)
+    
+    @action(detail=True, methods=['get'])
+    def get_groups(self, request, pk=None):
+        teacher = self.get_object(pk)
+
+        if teacher:
+            groups = self.get_groups_by_teacher(teacher)
+            groups_serializer = ClassGroupSerializer(groups, many=True)
+            return Response({"groups" : groups_serializer.data})
+        return Response({
+            'message': 'Hay errores en la información enviada',
+            'errors': 'No existe el docente'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['get'], detail=False)
+    def search_teacher(self, request):
+        username_or_name = request.query_params.get('username_or_name', '')
+        student = User.objects.filter(
+            Q(username__icontains=username_or_name)|
+            Q(name__icontains=username_or_name),
+            rol = 'TEACHER'
+        )
+        if student:
+            student_serializer = self.serializer_class(student, many=True)
+            return Response(student_serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            'mensaje': 'No se ha encontrado un Docente.'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def set_password(self, request, pk=None):
