@@ -1,7 +1,7 @@
 import datetime
 from rest_framework import serializers
 
-from apps.groups.models import Subject, Departament, Period, SchoolRoom, Schedule
+from apps.groups.models import Subject, Departament, Period, SchoolRoom, Schedule, Group
 
 class SubjecSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,7 +36,7 @@ class SchoolRoomSerializer(serializers.ModelSerializer):
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
-        fields =  ('id', 'group', 'day_of_week', 'start_time', 'end_time')
+        fields =  ('id', 'course', 'day_of_week', 'start_time', 'end_time')
 
     def validate_start_time(self, start_time):
         if start_time < datetime.time(hour=7):
@@ -52,12 +52,35 @@ class ScheduleSerializer(serializers.ModelSerializer):
         elif end_time < start_time:
             raise serializers.ValidationError("La Hora de Fin no puede ser menor a la Hora de Inicio") 
         return end_time
+
+    def validate(self, data):
+        if 'course' not in data.keys():
+            raise serializers.ValidationError({
+                "course": "Debe ingresar un curso"
+            })
+        return data
     
     def to_representation(self,instance):
         return {
-            'id': instance.id,          
-            'group': instance.group.name if instance.group is not None else '',
+            'id': instance.id,
+            'course': {
+                'teacher': instance.course.teacher.full_name,
+                'subject': instance.course.subject.name,
+            },         
             'day_of_week': instance.day_of_week, 
             'start_time': instance.start_time, 
             'end_time': instance.end_time, 
+        }
+
+class GroupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Group
+        fields = ('id','name','period')
+    
+    def to_representation(self,instance):
+        return {
+            'id': instance.id,
+            'name': instance.name,            
+            'period': instance.period.period if instance.period is not None else '',
         }
