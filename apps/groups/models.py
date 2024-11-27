@@ -3,7 +3,7 @@ from django.db import models
 
 from apps.base.models import BaseModel
 
-# Materia 
+# 1. Materia 
 class Subject(BaseModel):
     name = models.CharField("Nombre de la materia", max_length=256, null=False, blank=False, unique=True)
 
@@ -15,7 +15,7 @@ class Subject(BaseModel):
     def __str__(self):
         return f'{self.name}'
 
-# Departamento
+# 2. Departamento
 class Departament(BaseModel):
     name = models.CharField("Nombre del departamento", max_length=128, null=False, blank=False, unique=True)
 
@@ -27,7 +27,7 @@ class Departament(BaseModel):
     def __str__(self):
         return f'{self.name}'
 
-# Periodo
+# 3. Periodo
 class Period(BaseModel):
     start_date = models.DateField("Fecha de inicio", null=False, blank=False,)
     end_date = models.DateField("Fecha de fin", null=False, blank=False,)
@@ -43,7 +43,7 @@ class Period(BaseModel):
 
     def __str__(self):
         return f'{self.period}'
-# Aula
+# 4. Aula
 class SchoolRoom(BaseModel):
     name = models.CharField("Nombre del Aula", max_length=256, null=False, blank=False, unique=True)
 
@@ -55,22 +55,45 @@ class SchoolRoom(BaseModel):
     def __str__(self):
         return f'{self.name}'
 
-# Grupo de Clases
-class ClassGroup(BaseModel):
+# 5. Grupo
+class Group(BaseModel):
     name = models.CharField("Nombre del grupo", max_length=256, null=False, blank=False)
-    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Docente", null=False, blank=False)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Materia", null=False, blank=False)
     period = models.ForeignKey(Period, on_delete=models.CASCADE, verbose_name="Periodo", null=False, blank=False)
-    school_room = models.ForeignKey(SchoolRoom, on_delete=models.CASCADE, verbose_name="Aula", null=False, blank=False)
 
     class Meta:
-        verbose_name = 'Grupo de clases'
-        verbose_name_plural = 'Grupos de clases'
-        db_table = 'class_group'
+        verbose_name = 'Grupo'
+        verbose_name_plural = 'Grupos'
+        db_table = 'group'
 
     def __str__(self):
-        return f'{self.name} docente: {self.teacher}'
+        return f'{self.name}'
 
+# 6. Curso
+class Course(BaseModel):
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Docente", null=False, blank=False)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, verbose_name="Grupo", null=False, blank=False)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Materia", null=False, blank=False)
+    school_room = models.ForeignKey(SchoolRoom, on_delete=models.CASCADE, verbose_name="Aula", null=False, blank=False)
+    departament = models.ForeignKey(Departament, on_delete=models.CASCADE, verbose_name="Departamento", null=False, blank=False)
+    period = models.ForeignKey(Period, on_delete=models.CASCADE, verbose_name="Periodo", null=False, blank=False)
+
+    class Meta:
+        verbose_name = 'Curso'
+        verbose_name_plural = 'Cursos' 
+        db_table = 'course'
+
+        # Evita que un curso se repita
+        constraints = [
+            models.UniqueConstraint(
+                fields=['teacher', 'group', 'subject', 'period'], 
+                condition=models.Q(state=True),
+                name='unique_course'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.subject} docente: {self.teacher}'
+    
 # Dias de la Semana
 class DayOfWeek(models.TextChoices):
     MONDAY    = "MONDAY", "Monday"
@@ -81,9 +104,9 @@ class DayOfWeek(models.TextChoices):
     SATURDAY  = 'SATURDAY', 'Saturday'
     SUNDAY    = "SUNDAY", "Sunday"
 
-# Horario de Grupo de clases
+# 7. Horario de Curso
 class Schedule(BaseModel):
-    group = models.ForeignKey(ClassGroup, verbose_name=("Grupo de clases"), on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, verbose_name=("Curso"), on_delete=models.CASCADE, null=True)
     day_of_week = models.CharField(
         max_length=20, choices=DayOfWeek.choices, default=DayOfWeek.MONDAY
     )
