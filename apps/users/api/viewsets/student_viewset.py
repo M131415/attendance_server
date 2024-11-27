@@ -28,19 +28,51 @@ class StudentViewSet(viewsets.GenericViewSet):
                             .values('id', 'username', 'email', 'name',)
         return self.queryset
     
+    @action(detail=False, methods=['post'],)
+    def create_from_list(self, request):
+        """
+        Action que acepta una lista de usuarios para crear múltiples instancias.
+        """
+        data = request.data  # La lista de objetos JSON enviada por el cliente
+        
+        if not isinstance(data, list):
+            return Response({"error": "Se esperaba una lista de estudiantes."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        success = []
+        errors = []
+
+        for user in data:
+            user_serializer = self.serializer_class(data=user)
+            if user_serializer.is_valid():
+                user_serializer.save()
+                success.append({
+                    'message': 'Usuario creado correctamente.',
+                    'user': user_serializer.data
+                })
+            else:
+                errors.append({
+                    'user': user['username'],
+                    'errors': user_serializer.errors
+                })
+        
+        return Response({
+            'success': success,
+            'errors': errors
+        }, status=status.HTTP_207_MULTI_STATUS if errors else status.HTTP_201_CREATED)
+    
     @action(methods=['get'], detail=False)
     def search_student(self, request):
         username_or_name = request.query_params.get('username_or_name', '')
-        teacher = User.objects.filter(
+        student = User.objects.filter(
             Q(username__icontains=username_or_name)|
             Q(name__icontains=username_or_name),
             rol = 'STUDENT'
         )
-        if teacher:
-            teacher_serializer = self.serializer_class(teacher, many=True)
-            return Response(teacher_serializer.data, status=status.HTTP_200_OK)
+        if student:
+            student_serializer = self.serializer_class(student, many=True)
+            return Response(student_serializer.data, status=status.HTTP_200_OK)
         return Response({
-            'mensaje': 'No se ha encontrado un Docente.'
+            'mensaje': 'No se ha encontrado un Estudiante.'
         }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
