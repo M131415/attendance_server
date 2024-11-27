@@ -2,31 +2,40 @@ from django.contrib import admin
 from apps.groups.models import *
 
 # Register your models here.
-class ClassGroupAdmin(admin.ModelAdmin):
+class GroupAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'name',
-        'teacher',
-        'subject',
         'period',
+    )
+
+class CourseAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'teacher',
+        'group',
+        'subject',
         'school_room',
+        'departament',
+        'period',
     )
 
 class ScheduleAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'group',
+        'course',
         'day_of_week',
         'start_time',
         'end_time',
     )
 
     list_filter = (
-        'group',
+        'course',
         'day_of_week'
     )
 
-admin.site.register(ClassGroup, ClassGroupAdmin)
+admin.site.register(Group, GroupAdmin)
+admin.site.register(Course, CourseAdmin)
 admin.site.register(Schedule, ScheduleAdmin)
 admin.site.register(Subject)
 admin.site.register(Departament)
