@@ -6,7 +6,7 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'student',
-        'class_group',
+        'group',
     )
     
 class AttendanceAdmin(admin.ModelAdmin):
