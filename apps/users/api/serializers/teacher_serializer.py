@@ -53,6 +53,7 @@ class TeacherListSerializer(serializers.ModelSerializer):
         return {
             'id': instance['id'],
             'name': instance['name'],
+            'last_name': instance['last_name'],
             'username': instance['username'],
             'email': instance['email'],
         }
