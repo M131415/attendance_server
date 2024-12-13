@@ -1,33 +1,25 @@
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from apps.users.models import User
-from apps.users.api.serializers.teacher_serializer import PasswordSerializer
-from apps.users.api.serializers.student_serializer import (
-    StudentSerializer, StudentListSerializer, 
-    UpdateStudentSerializer,
-)
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 
-class StudentViewSet(viewsets.GenericViewSet):
-    model = User
-    serializer_class = StudentSerializer
-    list_serializer_class = StudentListSerializer
-    queryset = None
+from apps.users import models
+from apps.users.api.filters.user_filter import UserFilter
+from apps.users.api.serializers.user_serializer import *
 
-    def get_object(self, pk):
-        return get_object_or_404(self.model, pk=pk)
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = models.User.objects.filter(is_active=True)
+    serializer_class = UserSerializer
+    list_serializer_class = UserListSerializer
 
-    def get_queryset(self):
-        if self.queryset is None:
-            self.queryset = self.model.objects\
-                            .filter(is_active=True, rol='STUDENT')\
-                            .values('id', 'username', 'email', 'name',)
-        return self.queryset
-    
+    filter_backends = (DjangoFilterBackend, OrderingFilter, SearchFilter)
+    filterset_class = UserFilter # Filtros
+    ordering_fields = ['last_name', ]  # Ordenación
+    search_fields   = ['username', 'name',] # Busqueda
+
     @action(detail=False, methods=['post'],)
     def create_from_list(self, request):
         """
@@ -36,7 +28,7 @@ class StudentViewSet(viewsets.GenericViewSet):
         data = request.data  # La lista de objetos JSON enviada por el cliente
         
         if not isinstance(data, list):
-            return Response({"error": "Se esperaba una lista de estudiantes."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Se esperaba una lista de docentes."}, status=status.HTTP_400_BAD_REQUEST)
         
         success = []
         errors = []
@@ -59,25 +51,10 @@ class StudentViewSet(viewsets.GenericViewSet):
             'success': success,
             'errors': errors
         }, status=status.HTTP_207_MULTI_STATUS if errors else status.HTTP_201_CREATED)
-    
-    @action(methods=['get'], detail=False)
-    def search_student(self, request):
-        username_or_name = request.query_params.get('username_or_name', '')
-        student = User.objects.filter(
-            Q(username__icontains=username_or_name)|
-            Q(name__icontains=username_or_name),
-            rol = 'STUDENT'
-        )
-        if student:
-            student_serializer = self.serializer_class(student, many=True)
-            return Response(student_serializer.data, status=status.HTTP_200_OK)
-        return Response({
-            'mensaje': 'No se ha encontrado un Estudiante.'
-        }, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def set_password(self, request, pk=None):
-        user = self.get_object(pk)
+        user = self.get_queryset().filter(id=pk,).first()
         password_serializer = PasswordSerializer(data=request.data)
         if password_serializer.is_valid():
             user.set_password(password_serializer.validated_data['password'])
@@ -91,16 +68,18 @@ class StudentViewSet(viewsets.GenericViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request):
-        users = self.get_queryset()
-        users_serializer = self.list_serializer_class(users, many=True)
-        return Response(users_serializer.data, status=status.HTTP_200_OK)
+        users = self.filter_queryset(self.get_queryset())  # Aplica filtros y ordering
+        user_serializer = self.list_serializer_class(users, many=True)
+        return Response(user_serializer.data)
     
     def create(self, request):
+        print(request.data)
         user_serializer = self.serializer_class(data=request.data)
-        if user_serializer.is_valid():
+        if user_serializer.is_valid():    
             user_serializer.save()
             return Response({
-                'message': 'Estudiante registrado correctamente.'
+                'message': 'Usuario registrado correctamente.',
+                'user': user_serializer.data
             }, status=status.HTTP_201_CREATED)
         return Response({
             'message': 'Hay errores en el registro',
@@ -108,17 +87,20 @@ class StudentViewSet(viewsets.GenericViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        user = self.get_object(pk)
-        user_serializer = self.serializer_class(user)
-        return Response(user_serializer.data)
+        user = self.get_queryset().filter(id=pk,).first()
+        if user:
+            user_serializer = self.serializer_class(user)
+            return Response(user_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Usuario con ese id!'}, status=status.HTTP_400_BAD_REQUEST)
+
     
     def update(self, request, pk=None):
-        user = self.get_object(pk)
-        user_serializer = UpdateStudentSerializer(user, data=request.data)
+        user = self.get_queryset().filter(id=pk,).first()
+        user_serializer = UpdateUserSerializer(user, data=request.data)
         if user_serializer.is_valid():
             user_serializer.save()
             return Response({
-                'message': 'Estudiante actualizado correctamente'
+                'message': 'Usuario actualizado correctamente'
             }, status=status.HTTP_200_OK)
         return Response({
             'message': 'Hay errores en la actualización',
@@ -126,11 +108,9 @@ class StudentViewSet(viewsets.GenericViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        user_destroy = self.model.objects.filter(id=pk).update(is_active=False)
-        if user_destroy == 1:
-            return Response({
-                'message': 'Estudiante eliminado correctamente'
-            })
-        return Response({
-            'message': 'No existe el estudiante que desea eliminar'
-        }, status=status.HTTP_404_NOT_FOUND)
+        user = self.get_queryset().filter(id=pk,).first()      
+        if user:
+            user.is_active = False
+            user.save()
+            return Response({'message':'Usuario eliminado correctamente!'}, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Usuario con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)

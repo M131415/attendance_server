@@ -1,24 +1,36 @@
 import datetime
+
 from rest_framework import serializers
 
-from apps.groups.models import Subject, Departament, Period, SchoolRoom, Schedule, Group
+from apps.groups.models import Subject, Department, Period, SchoolRoom, Schedule
 
 class SubjecSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
-        fields =  ('id', 'name')
+        fields =  ('id','code', 'name', 'short_name', 'image')
+    
+    def to_representation(self,instance):
+        return {
+            'id': instance.id,    
+            'code': instance.code, 
+            'name': instance.name, 
+            'short_name': instance.short_name,
+            'semester': instance.semester,
+            'image': instance.image.url if instance.image != '' else '',
+        }
 
 class DepartamentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Departament
+        model = Department
         fields =  ('id', 'name')
 
 class PeriodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Period
-        fields =  ('id', 'start_date', 'end_date')
+        fields =  ('id','code', 'name', 'start_date', 'end_date')
 
     def validate_end_date(self, end_date):
+        print(self.context)
         int_list = list(map(int, self.context['start_date'].split('-')))
         
         start_date = datetime.date(int_list[0], int_list[1], int_list[2])
@@ -26,6 +38,13 @@ class PeriodSerializer(serializers.ModelSerializer):
         if end_date < start_date:
             raise serializers.ValidationError("La Fecha de Fin debe ser mayor que la Fecha de Inicio") 
         return end_date
+    
+    def validate(self, data):
+        if 'name' not in data.keys():
+            raise serializers.ValidationError({
+                "name": "Debe ingresar un nombre del periodo"
+            })
+        return data
 
 class SchoolRoomSerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,21 +85,23 @@ class ScheduleSerializer(serializers.ModelSerializer):
             'course': {
                 'teacher': instance.course.teacher.full_name,
                 'subject': instance.course.subject.name,
+                'image': instance.course.subject.image.url if instance.course.subject.image != '' else '',
             },         
             'day_of_week': instance.day_of_week, 
             'start_time': instance.start_time, 
             'end_time': instance.end_time, 
         }
 
-class GroupSerializer(serializers.ModelSerializer):
-
+class ScheduleListSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Group
-        fields = ('id','name','period')
+        model = Schedule
+        fields =  ('id', 'course', 'day_of_week', 'start_time', 'end_time')
     
     def to_representation(self,instance):
         return {
             'id': instance.id,
-            'name': instance.name,            
-            'period': instance.period.period if instance.period is not None else '',
+            'course': instance.course.id,         
+            'day_of_week': instance.day_of_week, 
+            'start_time': instance.start_time, 
+            'end_time': instance.end_time, 
         }

@@ -42,13 +42,25 @@ LOCAL_APPS = [
 ]
 
 THIRD_APPS = [
-    'rest_framework', 
+    'rest_framework',
+    'django_filters', 
     'simple_history',
+    "corsheaders",
 ]
 
 INSTALLED_APPS = LOCAL_APPS + BASE_APPS + THIRD_APPS
 
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
+}
+
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

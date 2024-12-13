@@ -33,11 +33,12 @@ class Roles(models.TextChoices):
     TEACHER = "TEACHER", "Teacher"
     STUDENT = "STUDENT", "Student"
 
+# Usuario
 class User(AbstractBaseUser, PermissionsMixin):
         
     username = models.CharField('Nombre de Usuario', max_length = 255, unique = True)
     email = models.EmailField('Correo Electrónico',max_length = 255, unique = True, null=False, blank=False)
-    name = models.CharField('Nombres', max_length = 255, blank = True, null = True)
+    name = models.CharField('Nombres', max_length = 255, blank = False, null = False)
     last_name = models.CharField('Apellidos', max_length = 255, blank = True, null = True)
     image = models.ImageField('Imagen de perfil', upload_to='perfil/', max_length=255, null=True, blank=True)
     date_joined = models.DateTimeField("Fecha de Incorporación", default=timezone.now)
@@ -52,9 +53,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def full_name(self):
-        return f"{self.name} {self.last_name}"
+        return f"{self.last_name} {self.name}"
 
     class Meta:
+        ordering = ["rol", "last_name"]
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
         db_table = 'auth_user'
@@ -65,9 +67,26 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f'{self.full_name}'
 
+ # Carrera   
+class Career(BaseModel):
+    code = models.CharField('Clave', max_length=64, null=False, blank=False)
+    name = models.CharField('Nombre completo', max_length=128, null=False, blank=False)
+    short_name = models.CharField('Nombre abreviado', max_length=128, null=False, blank=False)
+    specialty = models.CharField('Especialidad', max_length=128, null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.name}'
+    
+    class Meta:
+        ordering = ["code"]
+        verbose_name = 'Carrera'
+        verbose_name_plural = 'Carreras'
+        db_table = 'career'
+
+# Perfil del Docente
 class TeacherProfile(BaseModel):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    carrera = models.CharField('Carrera', max_length=128)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='teacher_profile')
+    degree = models.CharField('Grado académico', max_length=128, null=False)
 
     def __str__(self):
         return f'{self.user.name} {self.user.last_name}'
@@ -77,9 +96,10 @@ class TeacherProfile(BaseModel):
         verbose_name_plural = 'Perfiles de Docentes'
         db_table = 'teacher_profile'
 
+# Perfil del Estudiante
 class StudentProfile(BaseModel):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    control_no = models.CharField('No de control', max_length=128)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_profile')
+    career = models.ForeignKey(Career, on_delete=models.PROTECT, related_name='students', null=False)
 
     def __str__(self):
         return f'{self.user.name} {self.user.last_name}'
@@ -88,14 +108,15 @@ class StudentProfile(BaseModel):
         verbose_name = 'Perfil de Estudiante'
         verbose_name_plural = 'Perfiles de Estudiantes'
         db_table = 'student_profile'
-
+'''
 # Signal Cuando se crea un usuario
-""" @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         if instance.rol == 'STUDENT':
-            StudentProfile.objects.create(user=instance, control_no = instance.username)
+            # todo: Send an email onBoarding
         elif instance.rol == 'TEACHER':
-            TeacherProfile.objects.create(user=instance)
- """
+            # todo: Send an email onBoarding
+'''
+
 # todo Signal Cuando se Actializa o guarda un usuario

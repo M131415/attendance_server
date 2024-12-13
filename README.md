@@ -9,5 +9,10 @@
     cd attendance_server
     source venv_name/bin/activate
 
-4. Instalar las dependencias 
-    Django django-rest-framework Pillow simple-history
+4. Instalar las siguientes dependencias:
+    * Django 
+    * django-rest-framework 
+    * django-cors-headers
+    * simple-history
+    * Pillow 
+    * django-filter

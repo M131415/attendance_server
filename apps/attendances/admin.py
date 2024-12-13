@@ -7,16 +7,31 @@ class EnrollmentAdmin(admin.ModelAdmin):
         'id',
         'student',
         'group',
+        'state',
     )
     
+    list_filter = (
+        'student',
+        'group',
+    )
+
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'attendance_date',
+        'course',
         'enrollment',
         'attendance_status',
         'observation',
+        'state'
     )
 
-admin.site.register(Enrollments, EnrollmentAdmin)
-admin.site.register(Attendances, AttendanceAdmin)
+    list_filter = (
+        'attendance_date',
+        'course',
+        'enrollment',
+        'attendance_status',
+    )
+
+admin.site.register(Enrollment, EnrollmentAdmin)
+admin.site.register(Attendance, AttendanceAdmin)

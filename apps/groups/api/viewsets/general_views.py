@@ -1,293 +1,258 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from apps.groups.models import Subject, Departament, Period, SchoolRoom, Schedule
+from django_filters.rest_framework import DjangoFilterBackend
+
 from apps.groups.api.serializers.general_serializers import *
 
-class SubjectViewSet(viewsets.GenericViewSet):
-    model = Subject
+from apps.groups import models
+
+class SubjectViewSet(viewsets.ModelViewSet):
+    queryset = models.Subject.objects.filter(state=True)
     serializer_class = SubjecSerializer
+
+    filter_backends = [DjangoFilterBackend,]
+    filterset_fields   = ['code', 'name'] # Filtros
    
-    def get_queryset(self):
-        return self.get_serializer().Meta.model.objects.filter(state=True)
-
-    def get_object(self):
-        return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
-
     def list(self, request):
-        subject = self.get_queryset()
-        subject_serializer = self.get_serializer(subject, many=True)
-        data = {
-            "total": self.get_queryset().count(),
-            "subjects": subject_serializer.data
-        }
-        return Response(data)
+        subjects = self.filter_queryset(self.get_queryset()) # Aplica los filtros
+        page = self.paginate_queryset(subjects)  # Aplica la paginación
+        serializer = self.serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
         
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message':'Materia registrada correctamente!'}, status=status.HTTP_201_CREATED)
-        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'message':'Materia registrada correctamente!'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'message':'', 'error':serializer.errors}
+        , status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        if self.get_object().exists():
-            data = self.get_object().get()
-            data = self.get_serializer(data)
-            return Response(data.data)
-        return Response({'message':'', 'error':'Materia no encontrada!'}, status=status.HTTP_400_BAD_REQUEST)
+        subject = self.get_queryset().filter(id=pk,).first()
+        if subject:
+            subject_serializer = self.serializer_class(subject)
+            return Response(subject_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error':'No existe una Materia con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        if self.get_object().exists():
-            serializer = self.serializer_class(instance=self.get_object().get(), data=request.data)       
-            if serializer.is_valid():       
-                serializer.save()       
-                return Response({'message':'Materia actualizada correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)    
+        if self.get_queryset().filter(id=pk,).first():
+            subject_serializer = self.serializer_class(self.get_queryset().filter(id=pk,).first(), data=request.data)           
+            if subject_serializer.is_valid():
+                subject_serializer.save()
+                return Response({
+                    'message':'Materia actualizado correctamente!'
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'message':'', 'error':subject_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)   
 
     def destroy(self, request, pk=None):       
-        if self.get_object().exists():       
-            self.get_object().get().delete()       
-            return Response({'message':'Materia eliminada correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error':'Materia no encontrada!'}, status=status.HTTP_400_BAD_REQUEST)
+        subject = self.get_queryset().filter(id=pk,).first()       
+        if subject:
+            subject.state = False
+            subject.save()
+            return Response({'message':'Materia eliminado correctamente!'}, status=status.HTTP_200_OK)
+        return Response({'error':'No existe una Materia con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
-class DepartamentViewSet(viewsets.GenericViewSet):
-    model = Departament
+class DepartamentViewSet(viewsets.ModelViewSet):
+    queryset = models.Department.objects.filter(state=True)
     serializer_class = DepartamentSerializer
    
-    def get_queryset(self):
-        return self.get_serializer().Meta.model.objects.filter(state=True)
-
-    def get_object(self):
-        return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
-
     def list(self, request):
-        departament = self.get_queryset()
-        departament_serializer = self.get_serializer(departament, many=True)
-        data = {
-            "total": self.get_queryset().count(),
-            "departaments": departament_serializer.data
-        }
-        return Response(data)
-        
+        departments = self.filter_queryset(self.get_queryset()) # Aplica los filtros
+        page = self.paginate_queryset(departments)  # Aplica la paginación
+        serializer = self.serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message':'Periodo registrado correctamente!'}, status=status.HTTP_201_CREATED)
-        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'message':'Departamento registrado correctamente!'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'message':'', 'error':serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        if self.get_object().exists():
-            data = self.get_object().get()
-            data = self.get_serializer(data)
-            return Response(data.data)
-        return Response({'message':'', 'error':'Periodo no encontrado!'}, status=status.HTTP_400_BAD_REQUEST)
+        department = self.get_queryset().filter(id=pk,).first()
+        if department:
+            department_serializer = self.serializer_class(department)
+            return Response(department_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Departamento con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None): 
-        if self.get_object().exists():
-            serializer = self.serializer_class(instance=self.get_object().get(), data=request.data)       
-            if serializer.is_valid():       
-                serializer.save()       
-                return Response({'message':'Periodo actualizado correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)    
+        if self.get_queryset().filter(id=pk,).first():
+            department_serializer = self.serializer_class(self.get_queryset().filter(id=pk,).first(), data=request.data)           
+            if department_serializer.is_valid():
+                department_serializer.save()
+                return Response({
+                    'message':'Departamento actualizado correctamente!'
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'message':'', 'error':department_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)   
 
     def destroy(self, request, pk=None):       
-        if self.get_object().exists():       
-            self.get_object().get().delete()       
-            return Response({'message':'Periodo eliminado correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error':'Materia no encontrada!'}, status=status.HTTP_400_BAD_REQUEST)
+        department = self.get_queryset().filter(id=pk,).first()       
+        if department:
+            department.state = False
+            department.save()
+            return Response({'message':'Departamento eliminado correctamente!'}, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Departamento con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
-class PeriodViewSet(viewsets.GenericViewSet):
-    model = Period
+class PeriodViewSet(viewsets.ModelViewSet):
+    queryset = models.Period.objects.filter(state=True)
     serializer_class = PeriodSerializer
    
-    def get_queryset(self):
-        return self.get_serializer().Meta.model.objects.filter(state=True)
-
-    def get_object(self):
-        return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
-
     def list(self, request):
-        period = self.get_queryset()
-        period_serializer = self.get_serializer(period, many=True)
-        data = {
-            "total": self.get_queryset().count(),
-            "periods": period_serializer.data
-        }
-        return Response(data)
+        periods = self.filter_queryset(self.get_queryset()) # Aplica los filtros
+        page = self.paginate_queryset(periods)  # Aplica la paginación
+        serializer = self.serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
         
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data, context=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message':'Periodo registrado correctamente!'}, status=status.HTTP_201_CREATED)
-        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'message':'Periodo registrado correctamente!'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'message':'', 'error':serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        if self.get_object().exists():
-            data = self.get_object().get()
-            data = self.get_serializer(data)
-            return Response(data.data)
-        return Response({'message':'', 'error':'Periodo no encontrado!'}, status=status.HTTP_400_BAD_REQUEST)
+        period = self.get_queryset().filter(id=pk,).first()
+        if period:
+            period_serializer = self.serializer_class(period)
+            return Response(period_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Periodo con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        if self.get_object().exists():
-            serializer = self.serializer_class(instance=self.get_object().get(), data=request.data)       
-            if serializer.is_valid():       
-                serializer.save()       
-                return Response({'message':'Periodo actualizado correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)    
+        if self.get_queryset().filter(id=pk,).first():
+            period_serializer = self.serializer_class(self.get_queryset().filter(id=pk,).first(), data=request.data)           
+            if period_serializer.is_valid():
+                period_serializer.save()
+                return Response({
+                    'message':'Periodo actualizado correctamente!'
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'message':'', 'error':period_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)   
 
     def destroy(self, request, pk=None):       
-        if self.get_object().exists():       
-            self.get_object().get().delete()       
-            return Response({'message':'Periodo eliminado correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error':'Periodo no encontradao'}, status=status.HTTP_400_BAD_REQUEST)
+        period = self.get_queryset().filter(id=pk,).first()       
+        if period:
+            period.state = False
+            period.save()
+            return Response({'message':'Periodo eliminado correctamente!'}, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Periodo con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
-class SchoolRoomViewSet(viewsets.GenericViewSet):
-    model = SchoolRoom
+class SchoolRoomViewSet(viewsets.ModelViewSet):
+    queryset = models.SchoolRoom.objects.filter(state=True)
     serializer_class = SchoolRoomSerializer
+
+    filter_backends = [DjangoFilterBackend,]
+    filterset_fields   = ['name'] # Filtros
    
-    def get_queryset(self):
-        return self.get_serializer().Meta.model.objects.filter(state=True)
-
-    def get_object(self):
-        return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
-
     def list(self, request):
-        school_room = self.get_queryset()
-        school_room_serializer = self.get_serializer(school_room, many=True)
-        data = {
-            "total": self.get_queryset().count(),
-            "schoolRooms": school_room_serializer.data
-        }
-        return Response(data)
+        school_room = self.filter_queryset(self.get_queryset()) # Aplica los filtros
+        page = self.paginate_queryset(school_room)  # Aplica la paginación
+        serializer = self.serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
         
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message':'Aula registrada correctamente!'}, status=status.HTTP_201_CREATED)
-        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response({
+                'message':'Aula de clases registrado correctamente!'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'message':'', 'error':serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
     def retrieve(self, request, pk=None):
-        if self.get_object().exists():
-            data = self.get_object().get()
-            data = self.get_serializer(data)
-            return Response(data.data)
-        return Response({'message':'', 'error':'Aula no encontrada!'}, status=status.HTTP_400_BAD_REQUEST)
+        school_room = self.get_queryset().filter(id=pk,).first()
+        if school_room:
+            school_room_serializer = self.serializer_class(school_room)
+            return Response(school_room_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Aula de clases con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        if self.get_object().exists():
-            serializer = self.serializer_class(instance=self.get_object().get(), data=request.data)       
-            if serializer.is_valid():       
-                serializer.save()       
-                return Response({'message':'Aula actualizada correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)    
+        if self.get_queryset().filter(id=pk,).first():
+            school_room_serializer = self.serializer_class(self.get_queryset().filter(id=pk,).first(), data=request.data)           
+            if school_room_serializer.is_valid():
+                school_room_serializer.save()
+                return Response({
+                    'message':'Aula de clases actualizado correctamente!'
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'message':'', 'error':school_room_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)   
 
     def destroy(self, request, pk=None):       
-        if self.get_object().exists():       
-            self.get_object().get().delete()       
-            return Response({'message':'Aula eliminada correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error':'Materia no encontrada!'}, status=status.HTTP_400_BAD_REQUEST)
+        school_room = self.get_queryset().filter(id=pk,).first()       
+        if school_room:
+            school_room.state = False
+            school_room.save()
+            return Response({'message':'Aula de clases eliminado correctamente!'}, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Aula de clases con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
-class ScheduleViewSet(viewsets.GenericViewSet):
-    model = Schedule
+class ScheduleViewSet(viewsets.ModelViewSet):
+    queryset = models.Schedule.objects.filter(state=True)
     serializer_class = ScheduleSerializer
-   
-    def get_queryset(self):
-        return self.get_serializer().Meta.model.objects.filter(state=True)
-
-    def get_object(self):
-        return self.get_serializer().Meta.model.objects.filter(id=self.kwargs['pk'], state=True)
+    list_serializer_class = ScheduleListSerializer
 
     def list(self, request):
-        schedules = self.get_queryset()
-        schedule_serializer = self.get_serializer(schedules, many=True)
-        data = {
-            "total": self.get_queryset().count(),
-            "schedules": schedule_serializer.data
-        }
-        return Response(data)
-        
+        schedules = self.filter_queryset(self.get_queryset()) # Aplica los filtros
+        page = self.paginate_queryset(schedules)  # Aplica la paginación
+        serializer = self.list_serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data, context=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message':'Horario registrado correctamente!'}, status=status.HTTP_201_CREATED)
-        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'message':'Horario registrado correctamente!'
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'message':'', 'error':serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        if self.get_object().exists():
-            data = self.get_object().get()
-            data = self.get_serializer(data)
-            return Response(data.data)
-        return Response({'message':'', 'error':'Horario no encontrado!'}, status=status.HTTP_400_BAD_REQUEST)
+        schedule = self.get_queryset().filter(id=pk,).first()
+        if schedule:
+            schedule_serializer = self.serializer_class(schedule)
+            return Response(schedule_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Horario con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        if self.get_object().exists():
-            serializer = self.serializer_class(instance=self.get_object().get(), data=request.data)       
-            if serializer.is_valid():       
-                serializer.save()       
-                return Response({'message':'Horario actualizado correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)    
+        if self.get_queryset().filter(id=pk,).first():
+            schedule_serializer = self.serializer_class(self.get_queryset().filter(id=pk,).first(), data=request.data)           
+            if schedule_serializer.is_valid():
+                schedule_serializer.save()
+                return Response({
+                    'message':'Horario actualizado correctamente!'
+                }, status=status.HTTP_200_OK)
+            return Response({
+                'message':'', 'error':schedule_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)   
 
     def destroy(self, request, pk=None):       
-        if self.get_object().exists():
-            self.get_object().get().delete()       
-            return Response({'message':'Horario eliminado correctamente!'}, status=status.HTTP_200_OK)       
-        return Response({'message':'', 'error':'Horario no encontrado!'}, status=status.HTTP_400_BAD_REQUEST)
-    
-class GroupViewSet(viewsets.ModelViewSet):
-    serializer_class = GroupSerializer
-
-    def get_queryset(self, pk=None):
-        if pk is None:
-            return self.get_serializer().Meta.model.objects.filter(state=True)
-        return self.get_serializer().Meta.model.objects.filter(id=pk, state=True).first()
-
-        
-    def list(self, request):
-        class_group_serializer = self.get_serializer(self.get_queryset(), many=True)
-        data = {
-            "total": self.get_queryset().count(),
-            "groups": class_group_serializer.data
-        }
-        return Response(data)
-
-    def create(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message':'Grupo de clase registrado correctamente!'}, status=status.HTTP_201_CREATED)
-        return Response({'message':'', 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    def retrieve(self, request, pk=None):
-        class_group = self.get_queryset(pk)
-        if class_group:
-            class_group_serializer = ClassGroupRetrieveSerializer(class_group)
-            return Response(class_group_serializer.data, status=status.HTTP_200_OK)
-        return Response({'error':'No existe un Grupo de clase con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, pk=None):
-       if self.get_queryset(pk):
-            class_group_serializer = self.serializer_class(self.get_queryset(pk), data=request.data)           
-            if class_group_serializer.is_valid():
-                class_group_serializer.save()
-                return Response({'message':'Grupo de clase actualizado correctamente!'}, status=status.HTTP_200_OK)
-            return Response({'message':'', 'error':class_group_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)   
-
-    def destroy(self, request, pk=None):       
-        class_group = self.get_queryset().filter(id=pk).first() # get instance        
-        if class_group:
-            class_group.state = False
-            class_group.save()
-            return Response({'message':'Grupo de clase eliminado correctamente!'}, status=status.HTTP_200_OK)
-        return Response({'error':'No existe un Grupo de clase con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
+        schedule = self.get_queryset().filter(id=pk,).first()       
+        if schedule:
+            schedule.state = False
+            schedule.save()
+            return Response({'message':'Horario eliminado correctamente!'}, status=status.HTTP_200_OK)
+        return Response({'error':'No existe un Horario con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)

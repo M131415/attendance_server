@@ -7,6 +7,8 @@ class GroupAdmin(admin.ModelAdmin):
         'id',
         'name',
         'period',
+        'enrollments_count',
+        'courses_count',
     )
 
 class CourseAdmin(admin.ModelAdmin):
@@ -16,7 +18,7 @@ class CourseAdmin(admin.ModelAdmin):
         'group',
         'subject',
         'school_room',
-        'departament',
+        'department',
         'period',
     )
 
@@ -38,6 +40,6 @@ admin.site.register(Group, GroupAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Schedule, ScheduleAdmin)
 admin.site.register(Subject)
-admin.site.register(Departament)
+admin.site.register(Department)
 admin.site.register(Period)
 admin.site.register(SchoolRoom)
