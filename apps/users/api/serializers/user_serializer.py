@@ -1,38 +1,39 @@
 from rest_framework import serializers
 
-
 from apps.users.models import User
 from apps.users.models import Roles
 from apps.users.api.serializers.general_serializer import TeacherProfileSerializer, StudentProfileSerializer
 
-# Serializadores para mostrar la informacion de cada usuario basado en su rol
-class AdminSerializer(serializers.ModelSerializer):
+class BaseUserRolSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'name', 'last_name', 'rol',)
+        fields = ('id', 'username', 'email','image', 'name', 'last_name', 'rol',)
 
-class TeacherSerializer(serializers.ModelSerializer):
+# Serializadores para mostrar la informacion de cada usuario basado en su rol
+class AdminSerializer(BaseUserRolSerializer):
+    pass
+
+class TeacherSerializer(BaseUserRolSerializer):
     teacher_profile = TeacherProfileSerializer(required=False)
 
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'name', 'last_name', 'rol', 'teacher_profile')
+    class Meta(BaseUserRolSerializer.Meta):
+        fields = BaseUserRolSerializer.Meta.fields + ('teacher_profile',)
 
-class StudentSerializer(serializers.ModelSerializer):
+class StudentSerializer(BaseUserRolSerializer):
     student_profile = StudentProfileSerializer(required=False)
 
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'name', 'last_name', 'rol', 'student_profile')
+    class Meta(BaseUserRolSerializer.Meta):
+        fields = BaseUserRolSerializer.Meta.fields + ('student_profile',)
 
-# Serializador para crear un usuario
+
+# Serializador para crear o recuperar un usuario 
 class UserSerializer(serializers.ModelSerializer):
     teacher_profile = TeacherProfileSerializer(required=False)
     student_profile = StudentProfileSerializer(required=False)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'name', 'last_name', 'rol', 'password', 'teacher_profile', 'student_profile')
+        fields = ('id', 'username', 'email', 'image', 'name', 'last_name', 'rol', 'password', 'teacher_profile', 'student_profile')
     
     def validate_rol(self, value):
         if value == '' or value == None:
@@ -78,11 +79,11 @@ class UserSerializer(serializers.ModelSerializer):
             admin_serializer = AdminSerializer(instance)
             return admin_serializer.data
         elif instance.rol == Roles.TEACHER:
-            admin_serializer = TeacherSerializer(instance)
-            return admin_serializer.data
+            teacher_serializer = TeacherSerializer(instance)
+            return teacher_serializer.data
         elif instance.rol == Roles.STUDENT:
-            admin_serializer = StudentSerializer(instance)
-            return admin_serializer.data
+            student_serializer = StudentSerializer(instance)
+            return student_serializer.data
 
 # Serializador para Actualizar un usuario en base a su rol
 class UpdateUserSerializer(serializers.ModelSerializer):
@@ -133,6 +134,16 @@ class PasswordSerializer(serializers.Serializer):
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'full_name',]
+        fields = ['id', 'username', 'email', 'full_name', 'image', 'rol']
+
+    def to_representation(self,instance):
+        return {
+            'id': instance.id,
+            'username': instance.username,
+            'email': instance.email,
+            'full_name': instance.full_name,
+            'image': instance.image.url if instance.image != '' else '',
+            'rol': instance.rol,
+        }
 
    

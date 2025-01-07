@@ -11,19 +11,26 @@ from apps.users.api.filters.user_filter import UserFilter
 from apps.users.api.serializers.user_serializer import *
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = models.User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     list_serializer_class = UserListSerializer
+    update_serializer_class = UpdateUserSerializer
 
     filter_backends = (DjangoFilterBackend, OrderingFilter, SearchFilter)
     filterset_class = UserFilter # Filtros
     ordering_fields = ['last_name', ]  # Ordenación
     search_fields   = ['username', 'name',] # Busqueda
 
+    def get_queryset(self, pk=None):
+        if pk is None:
+            return models.User.objects.filter(is_active=True)
+        return models.User.objects.filter(id=pk, is_active=True).first()
+
     @action(detail=False, methods=['post'],)
     def create_from_list(self, request):
         """
-        Action que acepta una lista de usuarios para crear múltiples instancias.
+        Crea una lista de usuarios a partir de una lista de usuarios
+
+        ejemplo de url: /users/users/create_from_list/
         """
         data = request.data  # La lista de objetos JSON enviada por el cliente
         
@@ -54,7 +61,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def set_password(self, request, pk=None):
-        user = self.get_queryset().filter(id=pk,).first()
+        """
+        Cambia la contraseña de un usuario
+
+        ejemplo de url: /users/users/1/set_password/
+        """
+        user = self.get_queryset(pk)
         password_serializer = PasswordSerializer(data=request.data)
         if password_serializer.is_valid():
             user.set_password(password_serializer.validated_data['password'])
@@ -68,12 +80,22 @@ class UserViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request):
-        users = self.filter_queryset(self.get_queryset())  # Aplica filtros y ordering
-        user_serializer = self.list_serializer_class(users, many=True)
-        return Response(user_serializer.data)
+        """
+        Retorna una lista de usuarios
+
+        ejemplo de url: /users/users/
+        """
+        users = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(users)
+        serializer = self.list_serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)
     
     def create(self, request):
-        print(request.data)
+        """
+        Crea un usuario
+
+        ejemplo de url: /users/users/
+        """
         user_serializer = self.serializer_class(data=request.data)
         if user_serializer.is_valid():    
             user_serializer.save()
@@ -87,7 +109,12 @@ class UserViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        user = self.get_queryset().filter(id=pk,).first()
+        """
+        Retorna un usuario
+        
+        ejemplo de url: /users/users/1/
+        """
+        user = self.get_queryset(pk)
         if user:
             user_serializer = self.serializer_class(user)
             return Response(user_serializer.data, status=status.HTTP_200_OK)
@@ -95,8 +122,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
     
     def update(self, request, pk=None):
-        user = self.get_queryset().filter(id=pk,).first()
-        user_serializer = UpdateUserSerializer(user, data=request.data)
+        """
+        Actualiza un usuario
+        
+        ejemplo de url: /users/users/1/
+        """
+        user = self.get_queryset(pk)
+        user_serializer = self.update_serializer_class(user, data=request.data)
         if user_serializer.is_valid():
             user_serializer.save()
             return Response({
@@ -108,7 +140,12 @@ class UserViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        user = self.get_queryset().filter(id=pk,).first()      
+        """
+        Elimina un usuario
+        
+        ejemplo de url: /users/users/1/
+        """
+        user = self.get_queryset(pk)      
         if user:
             user.is_active = False
             user.save()

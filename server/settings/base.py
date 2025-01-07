@@ -46,6 +46,7 @@ THIRD_APPS = [
     'django_filters', 
     'simple_history',
     "corsheaders",
+    'drf_yasg', # Auto documentation with Swagger
 ]
 
 INSTALLED_APPS = LOCAL_APPS + BASE_APPS + THIRD_APPS
@@ -56,7 +57,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 50,
+    'PAGE_SIZE': 150,
 }
 
 MIDDLEWARE = [

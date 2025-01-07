@@ -16,22 +16,26 @@ class GroupPagination(PageNumberPagination):
 
 
 class GroupViewSet(viewsets.ModelViewSet):
-    queryset = models.Group.objects.filter(state=True)
     serializer_class = GroupSerializer
     list_serializer_class = GroupListSerializer
     update_serializer_class = GroupUpdateSerializer
 
     filter_backends = [DjangoFilterBackend,]
-    filterset_fields   = ['name', 'period'] # Filtros
+    filterset_fields   = ['name', 'period', 'enrollments__student', 'enrollments__state'] # Filtros
 
     pagination_class = GroupPagination
+
+    def get_queryset(self, pk=None):
+        if pk is None:
+            return models.Group.objects.filter(state=True)
+        return models.Group.objects.filter(id=pk, state=True).first()
     
     @action(detail=True, methods=['post'], url_path='enroll')
     def enroll_students(self, request, pk=None):
         """
         Inscribir a una lista de estudiantes en un grupo.
         """
-        group = self.get_queryset().filter(id=pk,).first()
+        group = self.get_queryset(pk)
         
         if 'students' not in request.data.keys():
             return Response({"detail": "Se esperaba la palabra clave 'students' en la solicitud"}, status=status.HTTP_400_BAD_REQUEST)
@@ -95,7 +99,8 @@ class GroupViewSet(viewsets.ModelViewSet):
 
             # Marcar la inscripción como inactiva
             if enrollment:
-                enrollment.delete()
+                enrollment.state = False
+                enrollment.save()
                 deleted.append(enrollment_id)
             else:
                 errors.append({"enrollment": enrollment_id, "error": 'No existe una Inscripción con estos datos!'})
@@ -123,15 +128,15 @@ class GroupViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        group = self.get_queryset().filter(id=pk,).first()
+        group = self.get_queryset(pk)
         if group:
             group_serializer = self.serializer_class(group)
             return Response(group_serializer.data, status=status.HTTP_200_OK)
         return Response({'error':'No existe un Grupo de clase con estos datos!'}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-       if self.get_queryset().filter(id=pk,).first():
-            group_serializer = self.update_serializer_class(self.get_queryset().filter(id=pk,).first(), data=request.data)           
+       if self.get_queryset(pk):
+            group_serializer = self.update_serializer_class(self.get_queryset(pk), data=request.data)           
             if group_serializer.is_valid():
                 group_serializer.save()
                 return Response({
@@ -142,7 +147,7 @@ class GroupViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)   
 
     def destroy(self, request, pk=None):       
-        group = self.get_queryset().filter(id=pk,).first()       
+        group = self.get_queryset(pk)       
         if group:
             group.state = False
             group.save()

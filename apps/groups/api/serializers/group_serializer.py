@@ -17,7 +17,11 @@ class EnrollmentSerializerToGroup(serializers.ModelSerializer):
     def to_representation(self,instance):
         return {
             'id': instance.id,
-            'student': instance.student.full_name
+            'student': {
+                'full_name': instance.student.full_name,
+                'username': instance.student.username,
+                'image_url': instance.student.image.url if instance.student.image != '' else '',
+            }
         }
 
 # Serializador para mostrar una lista de cursos de un grupo
@@ -38,6 +42,7 @@ class CourseListSerializerToGroup(serializers.ModelSerializer):
 
 # Serializador para crear o recupera un grupo
 class GroupSerializer(serializers.ModelSerializer):
+
     enrollments = EnrollmentSerializerToGroup(required=False, many=True)
     courses = CourseListSerializerToGroup(required=False, many=True)
 
@@ -53,14 +58,21 @@ class GroupSerializer(serializers.ModelSerializer):
         return group
     
     def to_representation(self,instance):
-        course_serializer = CourseListSerializerToGroup(instance.courses, many=True)
-        enrollment_serializer = EnrollmentSerializerToGroup(instance.enrollments, many=True, )
+        from apps.groups.api.serializers.general_serializers import PeriodSerializer
+        period_serializer = PeriodSerializer(instance.period)
+        # Filtrar inscripciones con estado en True
+        active_enrollments = instance.enrollments.filter(state=True)
+        # Filtrar cursos con estado en True
+        active_courses = instance.courses.filter(state=True)
+
+        course_serializer = CourseListSerializerToGroup(active_courses, many=True)
+        enrollment_serializer = EnrollmentSerializerToGroup(active_enrollments, many=True, )
         return {
             'id': instance.id,
-            'name': instance.name,            
-            'period': instance.period.name,
+            'name': instance.name, 
             'enrollments_count': instance.enrollments_count,
-            'courses_count': instance.courses_count,
+            'courses_count': instance.courses_count,           
+            'period': period_serializer.data,
             'courses': course_serializer.data,
             'enrollments': enrollment_serializer.data
         }
@@ -70,15 +82,17 @@ class GroupListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ('id','name','period','enrollments_count', 'courses_count')
+        fields = ('id','name','period','enrollments_count', 'courses_count', 'state')
     
     def to_representation(self,instance):
+        
         return {
             'id': instance.id,
             'name': instance.name,            
             'period': instance.period.name,
             'enrollments_count': instance.enrollments_count,
-            'courses_count': instance.courses_count
+            'courses_count': instance.courses_count,
+            'state': instance.state
         }
 
 # Serializador para actualizar un grupo

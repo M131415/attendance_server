@@ -2,7 +2,8 @@ from rest_framework import serializers
 
 from apps.attendances.models import Enrollment
 
-class EnrollmentSerializer(serializers.ModelSerializer):
+# Serializador solo para mostrar una lista de Inscripciones
+class EnrollmentListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Enrollment
@@ -15,13 +16,15 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     
     
     def to_representation(self,instance):
+        from apps.groups.api.serializers.group_serializer import GroupListSerializer
+        group_serializer = GroupListSerializer(instance.group)
         return {
-            'id': instance.id,           
+            'id': instance.id,
             'student': instance.student.full_name if instance.student is not None else '',
-            'group': instance.group.name if instance.group is not None else '',
+            'group': group_serializer.data if instance.group is not None else '',
         }
-
-class EnrollmentRetrieveSerializer(serializers.ModelSerializer):
+# Serialidor para recuperar o crear una inscripcion
+class EnrollmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Enrollment

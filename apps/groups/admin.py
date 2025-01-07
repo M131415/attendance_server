@@ -32,14 +32,44 @@ class ScheduleAdmin(admin.ModelAdmin):
     )
 
     list_filter = (
-        'course',
-        'day_of_week'
+        'day_of_week',
     )
 
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'code',
+        'name',
+        'short_name',
+        'semester',
+        'career',
+    )
+    
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'name',
+    )
+
+class PeriodAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'code',
+        'name',
+        'start_date',
+        'end_date',
+    )
+
+class SchoolRoomAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'name',
+    )
+    
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Schedule, ScheduleAdmin)
-admin.site.register(Subject)
-admin.site.register(Department)
-admin.site.register(Period)
-admin.site.register(SchoolRoom)
+admin.site.register(Subject, SubjectAdmin)
+admin.site.register(Department, DepartmentAdmin)
+admin.site.register(Period, PeriodAdmin)
+admin.site.register(SchoolRoom, SchoolRoomAdmin)
