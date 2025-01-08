@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from apps.users.models import User
 from apps.users.models import Roles
 from apps.users.api.serializers.general_serializer import TeacherProfileSerializer, StudentProfileSerializer
@@ -64,6 +66,7 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])  # Encriptar la contraseña
         if rol == Roles.ADMIN:
             user.is_superuser = True
+            user.is_staff = True
         user.save()
 
         # Crear el perfil correspondiente si aplica
@@ -146,4 +149,5 @@ class UserListSerializer(serializers.ModelSerializer):
             'rol': instance.rol,
         }
 
-   
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    pass  

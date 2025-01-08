@@ -33,7 +33,18 @@ class AttendanceListSerializer(serializers.ModelSerializer):
                     'name': instance.enrollment.group.name,
                 }
             },
-            'course': '',
+            'course': {
+                'id': instance.course.id,
+                'teacher': {
+                    'full_name': instance.course.teacher.full_name,
+                    'username': instance.course.teacher.username,
+                    'image': instance.course.teacher.image.url if instance.course.teacher.image else '',
+                },
+                'subject': {
+                    'name': instance.course.subject.name,
+                    'image': instance.course.subject.image.url if instance.course.subject.image else '',
+                },
+            },
             'observation': instance.observation if instance.observation is not None else '',
             'attendance_status': instance.attendance_status, 
             'attendance_date': instance.attendance_date, 

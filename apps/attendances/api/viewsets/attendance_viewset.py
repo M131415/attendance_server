@@ -11,12 +11,16 @@ from apps.attendances.api.serializers.attendance_serializer import AttendanceLis
 from apps.attendances import models
 from apps.groups.models import Course
 
+from rest_framework.permissions import IsAuthenticated
+
 class AttendanceViewSet(viewsets.ModelViewSet):
     """
         En este ViewSet ademas de gestinar las asistencias
     """
     serializer_class = AttendanceSerializer
     list_serializer_class = AttendanceListSerializer
+
+    permission_classes = [IsAuthenticated,]
 
     filter_backends = [DjangoFilterBackend,]
     filterset_fields   = ['course', 'enrollment__student', 'enrollment__group', 'attendance_date'] # Filtros
@@ -169,8 +173,14 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             'errors': {'course': 'El curso no existe'}
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_queryset(self, pk=None):
+    def get_queryset(self, pk=None, user=None):
+        from apps.users.models import Roles
+
         if pk is None:
+            if user.rol == Roles.TEACHER:
+                return models.Attendance.objects.filter(course__teacher=user, state=True)
+            if user.rol == Roles.STUDENT:
+                return models.Attendance.objects.filter(enrollment__student=user, state=True)
             return models.Attendance.objects.filter(state=True)
         return models.Attendance.objects.filter(id=pk, state=True).first()
   
@@ -180,7 +190,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
         ejemplo de url: /attendances/attendances/
         """
-        attendances = self.filter_queryset(self.get_queryset())
+        attendances = self.filter_queryset(self.get_queryset(user=request.user))
         page = self.paginate_queryset(attendances)  # Aplica la paginación
         serializer = self.list_serializer_class(page, many=True)
         return self.get_paginated_response(serializer.data)

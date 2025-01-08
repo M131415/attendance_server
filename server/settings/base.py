@@ -42,14 +42,19 @@ LOCAL_APPS = [
 ]
 
 THIRD_APPS = [
-    'rest_framework',
-    'django_filters', 
-    'simple_history',
-    "corsheaders",
+    'rest_framework', # API REST
+    'django_filters',  # Filter for API REST
+    'simple_history', # History of changes in models
+    "corsheaders", # CORS
     'drf_yasg', # Auto documentation with Swagger
+    'rest_framework_simplejwt', # JWT Authentication
 ]
 
 INSTALLED_APPS = LOCAL_APPS + BASE_APPS + THIRD_APPS
+
+SWAGGER_SETTINGS = {
+    'DOC_EXPANSION': 'none'
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
@@ -58,6 +63,13 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 150,
+    
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAdminUser',
+    ),
 }
 
 MIDDLEWARE = [

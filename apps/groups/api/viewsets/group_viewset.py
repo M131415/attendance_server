@@ -1,8 +1,8 @@
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
+
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 
 from apps.groups.api.serializers.group_serializer import GroupSerializer, GroupListSerializer, GroupUpdateSerializer
@@ -10,15 +10,19 @@ from apps.attendances.api.serializers.enrollment_serializer import EnrollmentSer
 
 from apps.groups import models
 
+from apps.users.permissions import IsAdminOrStudentUser
+
 # Clase para controlar el tamano de la consulta al metodo list()
 class GroupPagination(PageNumberPagination):
-    page_size = 30
+    page_size = 50
 
 
 class GroupViewSet(viewsets.ModelViewSet):
     serializer_class = GroupSerializer
     list_serializer_class = GroupListSerializer
     update_serializer_class = GroupUpdateSerializer
+
+    permission_classes = [IsAdminOrStudentUser,]
 
     filter_backends = [DjangoFilterBackend,]
     filterset_fields   = ['name', 'period', 'enrollments__student', 'enrollments__state'] # Filtros
@@ -111,6 +115,7 @@ class GroupViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK if deleted else status.HTTP_400_BAD_REQUEST)
 
     def list(self, request):
+        print(request.user)
         groups = self.filter_queryset(self.get_queryset()) # Aplica los filtros
         page = self.paginate_queryset(groups)  # Aplica la paginación
         serializer = self.list_serializer_class(page, many=True)

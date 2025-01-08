@@ -1,5 +1,3 @@
-from collections import defaultdict
-import datetime
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -8,9 +6,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
 from apps.groups.api.serializers.course_serializer import CourseSerializer, CourseListSerializer, CourseUpdateSerializer
-from apps.attendances.api.serializers.attendance_serializer import AttendanceSerializer
 
 from apps.groups import models
+
+from apps.users.permissions import IsAdminOrTeacherUser
+
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -20,18 +20,24 @@ class CourseViewSet(viewsets.ModelViewSet):
     list_serializer_class = CourseListSerializer
     update_serializer_class = CourseUpdateSerializer
 
+    permission_classes = [IsAdminOrTeacherUser,]
+
     filter_backends = (DjangoFilterBackend, OrderingFilter, SearchFilter)
     filterset_fields = ['teacher', 'period', 'group', 'schedules__day_of_week', 'subject',] # Filtros
     #ordering_fields = ['last_name', ]  # Ordenación
     #search_fields   = ['name', 'name',] # Busqueda
 
-    def get_queryset(self, pk=None):
+    def get_queryset(self, pk=None, user=None):
+        from apps.users.models import Roles
+        
         if pk is None:
+            if user.rol == Roles.TEACHER:
+                return models.Course.objects.filter(teacher=user, state=True)
             return models.Course.objects.filter(state=True)
         return models.Course.objects.filter(id=pk, state=True).first()
     
     def list(self, request):
-        courses = self.filter_queryset(self.get_queryset())
+        courses = self.filter_queryset(self.get_queryset(user=request.user))
         page = self.paginate_queryset(courses)  # Aplica la paginación
         serializer = self.list_serializer_class(page, many=True)
         return self.get_paginated_response(serializer.data)

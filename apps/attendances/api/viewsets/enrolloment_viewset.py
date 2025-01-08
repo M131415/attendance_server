@@ -7,9 +7,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from apps.attendances.api.serializers.enrollment_serializer import EnrollmentListSerializer, EnrollmentSerializer
 from apps.attendances import models
 
+from apps.users.permissions import IsAdminOrStudentUser
+
 class EnrollomentViewSet(viewsets.ModelViewSet):
     serializer_class = EnrollmentSerializer
     list_serializer_class = EnrollmentListSerializer
+
+    permission_classes = [IsAdminOrStudentUser,]
 
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['student', 'group',] # Filtros

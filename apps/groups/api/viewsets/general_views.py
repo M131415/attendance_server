@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.groups.api.serializers.general_serializers import *
 from apps.groups import models
+from apps.users.permissions import IsAdminOrTeacherUser
 
 class SubjectViewSet(viewsets.ModelViewSet):
     serializer_class = SubjecSerializer
@@ -12,7 +13,7 @@ class SubjectViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend,]
     filterset_fields   = ['code', 'name'] # Filtros
 
-    def get_queryset(self, pk=None):
+    def get_queryset(self, pk=None, user=None):
         if pk is None:
             return models.Subject.objects.filter(state=True)
         return models.Subject.objects.filter(id=pk, state=True).first()
@@ -227,16 +228,22 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleSerializer
     list_serializer_class = ScheduleListSerializer
 
+    permission_classes = [IsAdminOrTeacherUser,]
+
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['day_of_week', 'course__teacher', 'course',]
 
-    def get_queryset(self, pk=None):
+    def get_queryset(self, pk=None, user=None):
+        from apps.users.models import Roles
+
         if pk is None:
+            if user.rol == Roles.TEACHER:
+                return models.Schedule.objects.filter(course__teacher=user, state=True)
             return models.Schedule.objects.filter(state=True)
         return models.Schedule.objects.filter(id=pk, state=True).first()
 
     def list(self, request):
-        schedules = self.filter_queryset(self.get_queryset()) # Aplica los filtros
+        schedules = self.filter_queryset(self.get_queryset(user=request.user)) # Aplica los filtros
         page = self.paginate_queryset(schedules)  # Aplica la paginación
         serializer = self.list_serializer_class(page, many=True)
         return self.get_paginated_response(serializer.data)
